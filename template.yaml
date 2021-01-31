@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Slack app to read and echo back Jira details.
+
+Parameters:
+  SlackToken:
+    Type: String
+  SlackSecret:
+    Type: String
+  JiraURL:
+    Type: String
+  JiraUser:
+    Type: String
+  JiraPass:
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  SlackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: echo_bot/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          SLACK_BOT_TOKEN: !Ref SlackToken
+          SLACK_SIGNING_SECRET: !Ref SlackSecret
+          JIRA_URL: !Ref JiraURL
+          JIRA_USER: !Ref JiraUser
+          JIRA_PASS: !Ref JiraPass
+      Events:
+        SlackEvent:
+          Type: Api
+          Properties:
+            Path: /slack
+            Method: post
+
+Outputs:
+  SlackEventApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/slack/"
+  SlackFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt SlackFunction.Arn

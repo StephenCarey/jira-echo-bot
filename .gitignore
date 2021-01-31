@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Exclude local sam config
+samconfig.toml
+.aws-sam
