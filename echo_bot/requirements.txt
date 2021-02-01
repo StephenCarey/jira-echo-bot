@@ -1,0 +1,2 @@
+slack-bolt==1.2.3
+jira==2.0.0
