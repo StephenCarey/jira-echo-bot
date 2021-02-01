@@ -42,7 +42,7 @@ Resources:
 
 Outputs:
   SlackEventApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Description: "API Gateway endpoint URL for Prod stage for Slack function. Needed for configuring Slack."
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/slack/"
   SlackFunction:
     Description: "Lambda Function ARN"
