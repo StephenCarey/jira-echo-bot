@@ -12,17 +12,23 @@ sys.path.insert(1, "vendor")
 jira_url = os.environ.get("JIRA_URL")
 jira_user = os.environ.get("JIRA_USER")
 jira_pass = os.environ.get("JIRA_PASS")
+jira_regex_pattern = "(?:\s|^|\/)([A-Z,a-z]+-[0-9]+)"
 
 # process_before_response must be True when running on FaaS
 app = App(process_before_response=True)
 
 
-@app.message(re.compile("(?:\s|^)([A-Z,a-z]+-[0-9]+)(?=\s|$)"))
-def message_hello(message, say, context):
+@app.message(re.compile(jira_regex_pattern))
+def message_hello(ack, message, say, context):
+    ack()
+    message_blocks = []
 
-    for jira_id in context["matches"]:
+    logging.debug(f"Message: {message}")
+    matches = re.findall(jira_regex_pattern, message["text"])
 
-        jira = JIRA(jira_url, auth=(jira_user, jira_pass))
+    jira = JIRA(jira_url, auth=(jira_user, jira_pass))
+
+    for jira_id in set(matches):
 
         try:
             issue = jira.issue(jira_id)
@@ -41,7 +47,7 @@ def message_hello(message, say, context):
             else:
                 fix_version = "None"
 
-            blocks = [
+            message_blocks.append(
                 {
                     "type": "section",
                     "text": {
@@ -49,6 +55,8 @@ def message_hello(message, say, context):
                         "text": f"*<{jira_url}/browse/{jira_id}|[{jira_id}] {summary}>*",
                     },
                 },
+            )
+            message_blocks.append(
                 {
                     "type": "section",
                     "fields": [
@@ -58,15 +66,20 @@ def message_hello(message, say, context):
                         {"type": "mrkdwn", "text": f"*Assignee:* {assignee}"},
                     ],
                 },
-            ]
+            )
 
-            say(blocks=blocks)
         except JIRAError:
-            say("Odd, I cant find a summary for it")
+            logging.error(f"Odd, I cant find a summary for {jira_id}")
+
+    say(blocks=message_blocks)
 
 
 SlackRequestHandler.clear_all_log_handlers()
-logging.basicConfig(format="%(asctime)s %(message)s", level=logging.DEBUG)
+root = logging.getLogger()
+if root.handlers:
+    for handler in root.handlers:
+        root.removeHandler(handler)
+logging.basicConfig(format="%(asctime)s %(message)s", level=logging.INFO)
 
 
 def lambda_handler(event, context):
